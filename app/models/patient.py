@@ -26,6 +26,9 @@ class Patient(Base):
     # Structure: {"demographics": {...}, "breast_cancer_history": {...}, ...}
     onboarding_questionnaire = Column(JSON, nullable=False, default=dict)
     
+    # New: Detailed Breast Cancer Screening Data
+    breast_cancer_screening = Column(JSON, nullable=True)
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

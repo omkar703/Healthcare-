@@ -1,0 +1,51 @@
+{
+  "patientId": "550e8400-e29b-41d4-a716-446655440000",
+  "screeningHistory": {
+    "age": 45,
+    "denseBreastTissue": true,
+    "priorConditions": ["BENIGN_LUMP"],
+    "lastScreeningDate": "2025-01-15",
+    "screeningUpToDate": true
+  },
+  "familyGeneticRisk": {
+    "knownBRCAMutation": false,
+    "firstDegreeRelativeBreastCancer": true,
+    "secondDegreeRelativeBreastCancer": false,
+    "familyCancerBefore50": true
+  },
+  "currentSymptoms": {
+    "newLump": true,
+    "hardOrFixedLump": false,
+    "localizedPain": true,
+    "persistentPain": false,
+    "cyclicalPainOnly": false
+  },
+  "skinNippleChanges": {
+    "dimpling": false,
+    "nippleRetraction": false,
+    "dischargeType": "NONE",
+    "nippleSores": false,
+    "skinRedness": false
+  },
+  "shapeSizeChanges": {
+    "sizeChange": false,
+    "shapeChange": false,
+    "asymmetry": false
+  },
+  "hormonalHistory": {
+    "longTermOCPUse": true,
+    "longTermHRTUse": false,
+    "earlyMenarcheAge": false,
+    "lateMenopause": false
+  },
+  "lifestyle": {
+    "alcoholUse": false,
+    "tobaccoUse": false,
+    "sedentaryLifestyle": false,
+    "obesity": false
+  },
+  "priorCancerRadiation": {
+    "chestRadiationBefore30": false,
+    "previousCancer": false
+  }
+}

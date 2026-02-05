@@ -39,12 +39,13 @@ async def shutdown_event():
 
 # ==================== API ROUTERS ====================
 
-from app.api.v1 import patients, doctors, rag, ocr
+from app.api.v1 import patients, doctors, rag, ocr, breast_cancer_assessment
 
 app.include_router(patients.router, prefix="/api/v1")
 app.include_router(doctors.router, prefix="/api/v1")
 app.include_router(rag.router, prefix="/api/v1")
 app.include_router(ocr.router, prefix="/api/v1")
+app.include_router(breast_cancer_assessment.router, prefix="/api/v1")
 
 
 # ==================== HEALTH CHECK ENDPOINTS ====================

@@ -21,6 +21,7 @@ from app.schemas.patient import (
     DocumentUploadResponse,
     DocumentStatusResponse
 )
+from app.schemas.breast_cancer import BreastCancerRiskSchema
 from app.services.health_scoring import calculate_health_score
 from app.services.risk_assessment import calculate_risk_assessment
 from app.services.rag_service import rag_service
@@ -262,3 +263,28 @@ async def get_document_status(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving document status: {str(e)}")
+@router.get("/{patient_uuid}/breast-cancer-screening", response_model=BreastCancerRiskSchema)
+async def get_breast_cancer_screening(
+    patient_uuid: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """Get latest breast cancer screening assessment for patient"""
+    try:
+        patient = db.query(Patient).filter(Patient.patient_uuid == patient_uuid).first()
+        
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        if not patient.breast_cancer_screening:
+            raise HTTPException(status_code=404, detail="Breast cancer screening data not found for this patient")
+        
+        # Ensure patientId is in the response as per schema
+        screening_data = patient.breast_cancer_screening
+        screening_data["patientId"] = str(patient_uuid)
+        
+        return screening_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving breast cancer screening: {str(e)}")
