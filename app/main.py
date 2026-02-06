@@ -39,8 +39,9 @@ async def shutdown_event():
 
 # ==================== API ROUTERS ====================
 
-from app.api.v1 import patients, doctors, rag, ocr, breast_cancer_assessment
+from app.api.v1 import patients, doctors, rag, ocr, breast_cancer_assessment, chat
 
+app.include_router(chat.router, prefix="/api/v1")
 app.include_router(patients.router, prefix="/api/v1")
 app.include_router(doctors.router, prefix="/api/v1")
 app.include_router(rag.router, prefix="/api/v1")

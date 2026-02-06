@@ -61,49 +61,47 @@ else
 fi
 echo ""
 
-# Test 4: Patient Chat
-echo -e "${YELLOW}Test 4: Patient Chat${NC}"
+# Test 4: Patient Chat (Unified Endpoint)
+echo -e "${YELLOW}Test 4: Patient Chat (Unified Endpoint)${NC}"
 chat_payload='{
   "message": "What are my latest test results?",
   "conversation_id": null
 }'
 
-response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/patients/$PATIENT_UUID/chat" \
+response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/chat/patient/$PATIENT_UUID" \
   -H "Content-Type: application/json" \
   -d "$chat_payload")
 http_code=$(echo "$response" | tail -n1)
 
 if [ "$http_code" == "200" ]; then
-    echo -e "${GREEN}✓ PASS${NC} - Chat response received"
+    echo -e "${GREEN}✓ PASS${NC} - Patient chat successful"
     echo "$response" | sed '$d' | jq .
 elif [ "$http_code" == "404" ]; then
-    echo -e "${YELLOW}⚠ SKIP${NC} - Patient not found (expected if no test data)"
+    echo -e "${YELLOW}⚠ SKIP${NC} - Patient not found"
 else
     echo -e "${RED}✗ FAIL${NC} - Chat failed (HTTP $http_code)"
     echo "$response" | sed '$d'
 fi
 echo ""
 
-# Test 5: Doctor Chat
-echo -e "${YELLOW}Test 5: Doctor Chat${NC}"
-DOCTOR_UUID="660f9511-f30c-52e5-b827-557766551111"
+# Test 5: Doctor General Chat (Unified Endpoint)
+echo -e "${YELLOW}Test 5: Doctor General Chat (Unified Endpoint)${NC}"
+DOCTOR_UUID="550e8400-e29b-41d4-a716-446655440000"
 doctor_chat_payload='{
-  "patient_uuid": "550e8400-e29b-41d4-a716-446655440000",
-  "message": "Summarize this patient'\''s health status",
-  "conversation_id": null,
-  "additional_context": "Patient reports fatigue"
+  "message": "What are the contraindications for warfarin?",
+  "conversation_id": null
 }'
 
-response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/doctors/$DOCTOR_UUID/chat" \
+response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/chat/doctor/$DOCTOR_UUID" \
   -H "Content-Type: application/json" \
   -d "$doctor_chat_payload")
 http_code=$(echo "$response" | tail -n1)
 
 if [ "$http_code" == "200" ]; then
-    echo -e "${GREEN}✓ PASS${NC} - Doctor chat response received"
+    echo -e "${GREEN}✓ PASS${NC} - Doctor general chat successful"
     echo "$response" | sed '$d' | jq .
 elif [ "$http_code" == "404" ]; then
-    echo -e "${YELLOW}⚠ SKIP${NC} - Doctor or patient not found (expected if no test data)"
+    echo -e "${YELLOW}⚠ SKIP${NC} - Doctor not found"
 else
     echo -e "${RED}✗ FAIL${NC} - Doctor chat failed (HTTP $http_code)"
     echo "$response" | sed '$d'
@@ -119,16 +117,16 @@ if [ "$http_code" == "200" ]; then
     echo -e "${GREEN}✓ PASS${NC} - Patient list retrieved"
     echo "$response" | sed '$d' | jq .
 elif [ "$http_code" == "404" ]; then
-    echo -e "${YELLOW}⚠ SKIP${NC} - Doctor not found (expected if no test data)"
+    echo -e "${YELLOW}⚠ SKIP${NC} - Doctor not found"
 else
     echo -e "${RED}✗ FAIL${NC} - Failed to get patients (HTTP $http_code)"
 fi
 echo ""
 
-# Test 7: RAG Refresh
+# Test 7: RAG Index Refresh
 echo -e "${YELLOW}Test 7: RAG Index Refresh${NC}"
 rag_payload='{
-  "patient_uuid": "550e8400-e29b-41d4-a716-446655440000"
+  "patient_uuid": "4eef73cb-35c0-4798-8699-0981da3fcbec"
 }'
 
 response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/rag/refresh" \
@@ -140,31 +138,31 @@ if [ "$http_code" == "200" ]; then
     echo -e "${GREEN}✓ PASS${NC} - RAG refresh initiated"
     echo "$response" | sed '$d' | jq .
 elif [ "$http_code" == "404" ]; then
-    echo -e "${YELLOW}⚠ SKIP${NC} - Patient not found (expected if no test data)"
+    echo -e "${YELLOW}⚠ SKIP${NC} - Patient not found"
 else
     echo -e "${RED}✗ FAIL${NC} - RAG refresh failed (HTTP $http_code)"
 fi
 echo ""
 
-# Test 8: Document Upload (requires test file)
-echo -e "${YELLOW}Test 8: Document Upload${NC}"
-if [ -f "_documents/doctors/MBBS-DEGREE-rotated.jpg" ]; then
-    response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/patients/$PATIENT_UUID/documents/upload" \
-      -F "file=@_documents/doctors/MBBS-DEGREE-rotated.jpg")
+# Test 8: Document Upload (Unified Endpoint)
+echo -e "${YELLOW}Test 8: Document Upload (Unified Endpoint)${NC}"
+if [ -f "test_document.pdf" ]; then
+    response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/v1/chat/patient/4eef73cb-35c0-4798-8699-0981da3fcbec/upload" \
+      -F "file=@test_document.pdf")
     http_code=$(echo "$response" | tail -n1)
     
-    if [ "$http_code" == "201" ]; then
+    if [ "$http_code" == "200" ] || [ "$http_code" == "201" ]; then
         echo -e "${GREEN}✓ PASS${NC} - Document uploaded successfully"
         echo "$response" | sed '$d' | jq .
         
         # Extract document_id for status check
         DOCUMENT_ID=$(echo "$response" | sed '$d' | jq -r '.document_id')
         
-        # Test 9: Check Document Status
+        # Test 9: Check Document Processing Status
         echo ""
         echo -e "${YELLOW}Test 9: Check Document Processing Status${NC}"
-        sleep 2  # Wait a bit for processing to start
-        response=$(curl -s -w "\n%{http_code}" "$BASE_URL/api/v1/patients/documents/$DOCUMENT_ID/status")
+        sleep 2
+        response=$(curl -s -w "\n%{http_code}" "$BASE_URL/api/v1/chat/documents/$DOCUMENT_ID/status")
         http_code=$(echo "$response" | tail -n1)
         
         if [ "$http_code" == "200" ]; then
@@ -174,7 +172,7 @@ if [ -f "_documents/doctors/MBBS-DEGREE-rotated.jpg" ]; then
             echo -e "${RED}✗ FAIL${NC} - Status check failed (HTTP $http_code)"
         fi
     elif [ "$http_code" == "404" ]; then
-        echo -e "${YELLOW}⚠ SKIP${NC} - Patient not found (expected if no test data)"
+        echo -e "${YELLOW}⚠ SKIP${NC} - Patient not found"
     else
         echo -e "${RED}✗ FAIL${NC} - Upload failed (HTTP $http_code)"
         echo "$response" | sed '$d'

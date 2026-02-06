@@ -4,7 +4,7 @@ RAG (Retrieval-Augmented Generation) service for semantic search.
 
 from typing import List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, bindparam, String
 from app.models import DocumentChunk, Patient
 from app.services.aws_bedrock import bedrock_service
 from app.config import settings
@@ -49,26 +49,20 @@ class RAGService:
             embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
             
             # Perform vector similarity search using cosine distance
-            sql = text("""
+            # Use raw SQL with proper parameter substitution to avoid binding issues
+            sql_query = f"""
                 SELECT 
                     chunk_id,
                     chunk_text,
-                    metadata,
-                    1 - (embedding <=> :query_embedding::vector) as similarity
+                    chunk_metadata,
+                    1 - (embedding <=> '{embedding_str}'::vector) as similarity
                 FROM document_chunks
-                WHERE patient_uuid = :patient_uuid
-                ORDER BY embedding <=> :query_embedding::vector
-                LIMIT :top_k
-            """)
+                WHERE patient_uuid = '{str(patient_uuid)}'
+                ORDER BY embedding <=> '{embedding_str}'::vector
+                LIMIT {top_k}
+            """
             
-            result = db.execute(
-                sql,
-                {
-                    "query_embedding": embedding_str,
-                    "patient_uuid": str(patient_uuid),
-                    "top_k": top_k
-                }
-            )
+            result = db.execute(text(sql_query))
             
             # Fetch chunks with similarity scores
             chunks_with_scores = []

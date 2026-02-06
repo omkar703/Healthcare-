@@ -219,63 +219,60 @@ pytest --cov=app --cov-report=html
 
 ## 📊 API Endpoints (Planned)
 
-### Patient Endpoints
+### Chat & Document Endpoints (Unified)
 
-- `POST /api/v1/patients/onboard` - Patient onboarding
-- `GET /api/v1/patients/{uuid}/health-score` - Health score
-- `GET /api/v1/patients/{uuid}/risk-assessment` - Risk assessment
-- `POST /api/v1/patients/{uuid}/chat` - Patient chat
+- `POST /api/v1/chat/patient/{uuid}` - Patient chat with AI guardrails
+- `POST /api/v1/chat/doctor/{uuid}` - Doctor general AI chat
+- `POST /api/v1/chat/doctor/{uuid}/patient/{p_uuid}` - Doctor chat specific to a patient
+- `POST /api/v1/chat/patient/{uuid}/upload` - Patient document upload
+- `POST /api/v1/chat/doctor/{uuid}/upload` - Doctor document upload for patient
+- `GET /api/v1/chat/documents/{id}/status` - Document processing status
+- `GET /api/v1/chat/patient/{uuid}/history` - Patient chat history
+- `GET /api/v1/chat/patient/{uuid}/documents` - List of patient documents
 
-### Doctor Endpoints
+### Patient Management Endpoints
 
-- `POST /api/v1/doctors/onboard` - Doctor onboarding
-- `POST /api/v1/doctors/{uuid}/chat` - Doctor chat
-- `GET /api/v1/doctors/{uuid}/patients` - List patients
+- `GET /api/v1/patients/{uuid}/health-score` - View latest health score
+- `GET /api/v1/patients/{uuid}/risk-assessment` - View latest risk assessment
 
-### Document Endpoints
+### Doctor Management Endpoints
 
-- `POST /api/v1/documents/upload` - Upload document
-- `GET /api/v1/documents/{id}/status` - Processing status
+- `GET /api/v1/doctors/{uuid}/patients` - List all patients accessible to doctor
 
-### RAG Endpoints
+### Utility Endpoints
 
-- `POST /api/v1/rag/refresh` - Refresh RAG index
+- `POST /api/v1/rag/refresh` - Manually trigger RAG index refresh
+- `POST /api/v1/ocr/doctor-credentials` - Standalone OCR for medical credentials
 
 ## 🔐 Security
 
+- AI Guardrails for Patients (Emergency detection, complex query redirection)
+- Unrestricted AI access for Doctors (Medical analysis mode)
 - JWT-based authentication (TODO)
-- Role-based access control (TODO)
 - Data encryption at rest
 - HIPAA compliance measures
-- Audit logging (TODO)
 
 ## 🚧 Current Status
 
 **Completed**:
 
 - ✅ Project structure and Docker setup
-- ✅ Database models with pgvector
-- ✅ Mock data generators (patients, doctors, documents)
-- ✅ Database seeding script
-- ✅ Basic FastAPI application
-
-**In Progress**:
-
-- 🔄 AWS Bedrock integration
-- 🔄 AWS Textract integration
-- 🔄 3-Tier document processing pipeline
-- 🔄 RAG system implementation
-- 🔄 API endpoints
-- 🔄 Health scoring logic
-- 🔄 Risk assessment logic
+- ✅ Database models with pgvector and pgvector search indexing
+- ✅ Mock data system with 15 patients and 7 doctors
+- ✅ Unified Chat API for Patients and Doctors
+- ✅ AI Guardrails service for Patient Safety
+- ✅ RAG system with direct SQL vector similarity search
+- ✅ Standalone OCR service for Doctor Credentials using Bedrock Vision
+- ✅ 3-Tier document processing pipeline (OCR → Analysis → RAG)
+- ✅ Comprehensive API Documentation (CHATBOT_API_FLOW.md)
+- ✅ Health scoring and Risk assessment logic
 
 **TODO**:
 
-- ⏳ Authentication & authorization
-- ⏳ Chat implementation
-- ⏳ Celery tasks for document processing
-- ⏳ Test suite
-- ⏳ API documentation
+- ⏳ Authentication & Role-Based Access Control (RBAC)
+- ⏳ Multi-modal chat (Images/PDFs directly in chat)
+- ⏳ Full test suite with unit/integration tests
+- ⏳ Production deployment configuration
 
 ## 📝 License
 
