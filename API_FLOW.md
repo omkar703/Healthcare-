@@ -534,6 +534,76 @@ curl -X POST "http://localhost:8000/api/v1/doctors/660f9511-f30c-52e5-b827-55776
 
 ---
 
+### 10. Breast Cancer Risk Assessment
+
+**POST** `/api/v1/breast-cancer/assess`
+
+Calculate a comprehensive breast health score (0-100) and risk level.
+
+**Standalone Service:** This endpoint works as a stateless calculator. It takes input from the frontend and immediately returns the result. It does NOT require the patient to exist in the database to work, though it will automatically save the result if the `patientId` matches a record in our system.
+
+**Request Body:**
+
+```json
+{
+  "patientId": "550e8400-e29b-41d4-a716-446655440000",
+  "screeningHistory": {
+    "age": 45,
+    "denseBreastTissue": true,
+    "priorConditions": ["BENIGN_LUMP"],
+    "screeningUpToDate": true
+  },
+  "familyGeneticRisk": {
+    "knownBRCAMutation": false,
+    "firstDegreeRelativeBreastCancer": true,
+    "familyCancerBefore50": true
+  },
+  "currentSymptoms": {
+    "newLump": true,
+    "hardOrFixedLump": false,
+    "localizedPain": true
+  },
+  "skinNippleChanges": {
+    "dischargeType": "NONE"
+  },
+  "shapeSizeChanges": {
+    "asymmetry": false
+  },
+  "hormonalHistory": {
+    "longTermOCPUse": true,
+    "earlyMenarcheAge": false
+  },
+  "lifestyle": {
+    "alcoholUse": false
+  },
+  "priorCancerRadiation": {
+    "previousCancer": false
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "patientId": "550e8400-e29b-41d4-a716-446655440000",
+  "score": 47,
+  "riskScore": 47,
+  "riskLevel": "Medium",
+  "recommendation": "⚡ Consult a doctor for further evaluation...",
+  "requiredLabTests": ["..."],
+  "labTestStage": "Stage 2",
+  "reasoning": "...",
+  "criticalFlags": []
+}
+```
+
+**GET** `/api/v1/breast-cancer/assess/{patient_uuid}`
+
+Retrieve the latest breast cancer assessment for a patient.
+
+---
+
 ## Error Responses
 
 ### 404 Not Found

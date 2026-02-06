@@ -27,64 +27,44 @@ async def assess_breast_cancer_risk(
     """
     Calculate comprehensive breast cancer risk assessment.
     
-    **Scoring Logic:**
-    - Starts at 100 (Perfect Health)
-    - Deductions based on risk factors
-    - Final score: 0-100
-    
-    **Risk Levels:**
-    - HIGH (0-40): Critical flags present → Immediate specialist referral + Stage 2 labs + Genetic screening
-    - MEDIUM (41-75): Moderate risk factors → Doctor consultation + Stage 2 labs
-    - LOW (76-100): Good health status → Continue screening + Stage 1 labs
-    - STAGE 3: Previous cancer diagnosis → Oncology monitoring + Biopsy/Treatment tracking
-    
-    **Lab Test Stages:**
-    - Stage 1: Basic health panel (lipids, insulin, kidney, liver, CBC, thyroid, vitamins)
-    - Stage 2: Stage 1 + BRCA genetic testing + Tumor markers (CA 15-3, CA 27-29)
-    - Stage 3: Biopsy, histopathology, treatment monitoring, radiation tracking
-    
-    **Critical Flags (Automatic HIGH risk):**
-    - Hard/fixed lump
-    - Bloody nipple discharge
-    - Skin dimpling (peau d'orange)
-    - Nipple retraction
-    - Known BRCA1/2 mutation
-    - Prior chest radiation before age 30
+    This is a standalone calculation service. It takes patient data and returns 
+    a health score and recommendations. If the patient exists in the database, 
+    the result is automatically saved.
     """
     try:
         logger.info(f"Processing breast cancer assessment for patient: {request.patientId}")
         
-        # Verify patient exists (optional - can be removed if not required)
-        patient = db.query(Patient).filter(Patient.patient_uuid == request.patientId).first()
-        if not patient:
-            logger.warning(f"Patient {request.patientId} not found in database, proceeding with assessment")
-            # Note: We don't raise an error here as this is a standalone assessment service
-        
-        # Calculate assessment
+        # 1. Calculate assessment (Standalone logic, no DB needed)
         assessment = breast_cancer_scoring_service.calculate_assessment(request)
         
-        # Optionally store the assessment in the database
-        if patient:
-            # Store breast cancer screening data in patient record
-            patient.breast_cancer_screening = {
-                "patientId": str(request.patientId),
-                "score": assessment.score,
-                "riskLevel": assessment.riskLevel,
-                "recommendation": assessment.recommendation,
-                "labTestStage": assessment.labTestStage,
-                "criticalFlags": assessment.criticalFlags,
-                "screeningHistory": request.screeningHistory.model_dump(),
-                "familyGeneticRisk": request.familyGeneticRisk.model_dump(),
-                "currentSymptoms": request.currentSymptoms.model_dump(),
-                "skinNippleChanges": request.skinNippleChanges.model_dump(),
-                "shapeSizeChanges": request.shapeSizeChanges.model_dump(),
-                "hormonalHistory": request.hormonalHistory.model_dump(),
-                "lifestyle": request.lifestyle.model_dump(),
-                "priorCancerRadiation": request.priorCancerRadiation.model_dump()
-            }
-            db.commit()
-            logger.info(f"Stored breast cancer assessment for patient {request.patientId}")
-        
+        # 2. Optionally store the assessment in the database if patient exists
+        try:
+            patient = db.query(Patient).filter(Patient.patient_uuid == request.patientId).first()
+            if patient:
+                patient.breast_cancer_screening = {
+                    "patientId": str(request.patientId),
+                    "score": assessment.score,
+                    "riskScore": assessment.score,
+                    "riskLevel": assessment.riskLevel,
+                    "recommendation": assessment.recommendation,
+                    "labTestStage": assessment.labTestStage,
+                    "reasoning": assessment.reasoning,
+                    "criticalFlags": assessment.criticalFlags,
+                    "screeningHistory": request.screeningHistory.model_dump(),
+                    "familyGeneticRisk": request.familyGeneticRisk.model_dump(),
+                    "currentSymptoms": request.currentSymptoms.model_dump(),
+                    "skinNippleChanges": request.skinNippleChanges.model_dump(),
+                    "shapeSizeChanges": request.shapeSizeChanges.model_dump(),
+                    "hormonalHistory": request.hormonalHistory.model_dump(),
+                    "lifestyle": request.lifestyle.model_dump(),
+                    "priorCancerRadiation": request.priorCancerRadiation.model_dump()
+                }
+                db.commit()
+                logger.info(f"Stored assessment for patient {request.patientId}")
+        except Exception as db_err:
+            logger.warning(f"Could not store assessment in database: {str(db_err)}")
+            # We don't fail the request if DB storage fails, as this is primarily a calculation service
+            
         logger.info(f"Assessment complete: Score={assessment.score}, Risk={assessment.riskLevel}")
         return assessment
         
@@ -121,11 +101,12 @@ async def get_latest_assessment(
         return BreastCancerAssessmentResponse(
             patientId=patient_uuid,
             score=screening_data.get("score", 0),
+            riskScore=screening_data.get("score", screening_data.get("riskScore", 0)),
             riskLevel=screening_data.get("riskLevel", "Low"),
             recommendation=screening_data.get("recommendation", ""),
             requiredLabTests=breast_cancer_scoring_service._get_lab_tests(screening_data.get("labTestStage", "Stage 1")),
             labTestStage=screening_data.get("labTestStage", "Stage 1"),
-            reasoning=screening_data.get("reasoning", ""),
+            reasoning=screening_data.get("reasoning", "No reasoning provided."),
             criticalFlags=screening_data.get("criticalFlags", [])
         )
         

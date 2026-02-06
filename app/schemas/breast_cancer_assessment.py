@@ -98,6 +98,7 @@ class BreastCancerAssessmentResponse(BaseModel):
     """Response schema for breast cancer risk assessment"""
     patientId: UUID
     score: int = Field(..., ge=0, le=100, description="Breast health score (0-100)")
+    riskScore: Optional[int] = Field(None, description="Legacy field for risk score, equivalent to 'score'")
     riskLevel: RiskLevel
     recommendation: str = Field(..., description="Medical recommendation based on risk")
     requiredLabTests: List[str] = Field(..., description="List of required lab tests")

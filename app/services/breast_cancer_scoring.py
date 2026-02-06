@@ -139,6 +139,7 @@ class BreastCancerScoringService:
         return BreastCancerAssessmentResponse(
             patientId=request.patientId,
             score=score,
+            riskScore=score,
             riskLevel=risk_level,
             recommendation=recommendation,
             requiredLabTests=lab_tests,
@@ -166,7 +167,7 @@ class BreastCancerScoringService:
             score -= 50
             reasoning_parts.append("Hard/fixed lump: -50 points (critical finding)")
         
-        if request.skinNippleChanges.dischargeType == "BLOODY":
+        if request.skinNippleChanges.dischargeType.upper() == "BLOODY":
             critical_flags.append("Bloody nipple discharge")
             score -= 40
             reasoning_parts.append("Bloody nipple discharge: -40 points (critical finding)")
@@ -224,6 +225,14 @@ class BreastCancerScoringService:
         if request.hormonalHistory.longTermOCPUse:
             score -= 10
             reasoning_parts.append("Long-term OCP use: -10 points")
+
+        if request.hormonalHistory.earlyMenarcheAge:
+            score -= 8
+            reasoning_parts.append("Early menarche (before age 12): -8 points")
+
+        if request.hormonalHistory.lateMenopause:
+            score -= 8
+            reasoning_parts.append("Late menopause (after age 55): -8 points")
         
         # LOW-MEDIUM RISK FACTORS
         
@@ -234,6 +243,10 @@ class BreastCancerScoringService:
         if request.shapeSizeChanges.sizeChange or request.shapeSizeChanges.shapeChange:
             score -= 10
             reasoning_parts.append("Breast size/shape changes: -10 points")
+
+        if request.shapeSizeChanges.asymmetry:
+            score -= 8
+            reasoning_parts.append("Breast asymmetry: -8 points")
         
         if request.skinNippleChanges.nippleSores:
             score -= 12
@@ -341,6 +354,7 @@ class BreastCancerScoringService:
         return BreastCancerAssessmentResponse(
             patientId=request.patientId,
             score=0,  # Not applicable for diagnosed cancer patients
+            riskScore=0,
             riskLevel=RiskLevel.HIGH,
             recommendation="🏥 CANCER CARE: You are under active cancer treatment or surveillance. Please follow your oncologist's treatment plan and monitoring schedule.",
             requiredLabTests=self.STAGE_3_TESTS,
