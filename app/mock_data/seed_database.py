@@ -10,6 +10,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import uuid
+
 from app.database import SessionLocal, init_db
 from app.models import Patient, Doctor, MedicalDocument, DocumentType, ProcessingStatus
 from app.mock_data.patients import MockPatientGenerator
@@ -35,7 +37,7 @@ def seed_database():
         
         for mock_patient in mock_patients:
             patient = Patient(
-                patient_uuid=mock_patient["patient_uuid"],
+                patient_uuid=uuid.UUID(mock_patient["patient_uuid"]),
                 demographic_data=mock_patient["demographic_data"],
                 onboarding_questionnaire=mock_patient["onboarding_questionnaire"]
             )
@@ -51,7 +53,7 @@ def seed_database():
         
         for mock_doctor in mock_doctors:
             doctor = Doctor(
-                doctor_uuid=mock_doctor["doctor_uuid"],
+                doctor_uuid=uuid.UUID(mock_doctor["doctor_uuid"]),
                 name=mock_doctor["name"],
                 email=mock_doctor["email"],
                 specialization=mock_doctor["specialization"],
@@ -82,7 +84,7 @@ def seed_database():
                 
                 # Create database record
                 document = MedicalDocument(
-                    document_id=mock_doc["document_id"],
+                    document_id=uuid.UUID(mock_doc["document_id"]),
                     patient_uuid=patient_obj.patient_uuid,
                     file_path=str(file_path),
                     original_filename=mock_doc["filename"],

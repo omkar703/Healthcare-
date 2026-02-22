@@ -1,0 +1,107 @@
+ Image ai-api Building 
+ Image ai-celery_worker Building 
+ Image ai-celery_beat Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.54kB done
+#1 DONE 0.0s
+
+#2 [celery_beat internal] load build definition from Dockerfile
+#2 transferring dockerfile: 691B done
+#2 DONE 0.0s
+
+#3 [celery_worker internal] load metadata for docker.io/library/python:3.11-slim
+#3 DONE 1.3s
+
+#4 [celery_beat internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [celery_beat 1/7] FROM docker.io/library/python:3.11-slim@sha256:0b23cfb7425d065008b778022a17b1551c82f8b4866ee5a7a200084b7e2eafbf
+#5 resolve docker.io/library/python:3.11-slim@sha256:0b23cfb7425d065008b778022a17b1551c82f8b4866ee5a7a200084b7e2eafbf 0.0s done
+#5 DONE 0.0s
+
+#6 [celery_worker internal] load build context
+#6 transferring context: 5.50MB 0.0s done
+#6 DONE 0.0s
+
+#7 [api 2/7] WORKDIR /app
+#7 CACHED
+
+#8 [api 3/7] RUN apt-get update && apt-get install -y     gcc     g++     postgresql-client     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [api 4/7] COPY requirements.txt .
+#9 CACHED
+
+#10 [api 5/7] RUN pip install --no-cache-dir -r requirements.txt
+#10 CACHED
+
+#11 [celery_beat 6/7] COPY . .
+#11 DONE 0.1s
+
+#12 [celery_worker 7/7] RUN mkdir -p _documents/patients _documents/doctors
+#12 DONE 0.3s
+
+#13 [api] exporting to image
+#13 exporting layers 0.0s done
+#13 writing image sha256:0dfb00c6d5aeb80f2d1b9865981aa675fb63917e15489dbb7be38ea8c6c06801 done
+#13 naming to docker.io/library/ai-api done
+#13 DONE 0.1s
+
+#14 [celery_beat] exporting to image
+#14 exporting layers 0.0s done
+#14 writing image sha256:65a9e6a6fadf399ba3b256c4bbe3614aadba9614b5fd70709e64a9367df61a36 done
+#14 naming to docker.io/library/ai-celery_beat done
+#14 DONE 0.1s
+
+#15 [celery_worker] exporting to image
+#15 exporting layers 0.0s done
+#15 writing image sha256:6753d9922db461a989505997a3fb3a255937e7a67a1391a28554542ead088c17 done
+#15 naming to docker.io/library/ai-celery_worker done
+#15 DONE 0.1s
+
+#16 [api] resolving provenance for metadata file
+#16 DONE 0.0s
+
+#17 [celery_beat] resolving provenance for metadata file
+#17 DONE 0.0s
+
+#18 [celery_worker] resolving provenance for metadata file
+#18 DONE 0.0s
+ Image ai-api Built 
+ Image ai-celery_beat Built 
+ Image ai-celery_worker Built 
+ Network ai_default Creating 
+ Network ai_default Created 
+ Container healthcare_postgres Creating 
+ Container healthcare_redis Creating 
+ Container healthcare_redis Created 
+ Container healthcare_postgres Created 
+ Container healthcare_celery_beat Creating 
+ Container healthcare_api Creating 
+ Container healthcare_celery_worker Creating 
+ Container healthcare_celery_beat Created 
+ Container healthcare_celery_worker Created 
+ Container healthcare_api Created 
+ Container healthcare_redis Starting 
+ Container healthcare_postgres Starting 
+ Container healthcare_postgres Started 
+ Container healthcare_redis Started 
+ Container healthcare_postgres Waiting 
+ Container healthcare_redis Waiting 
+ Container healthcare_postgres Waiting 
+ Container healthcare_redis Waiting 
+ Container healthcare_postgres Waiting 
+ Container healthcare_redis Waiting 
+ Container healthcare_postgres Healthy 
+ Container healthcare_redis Healthy 
+ Container healthcare_celery_worker Starting 
+ Container healthcare_postgres Healthy 
+ Container healthcare_redis Healthy 
+ Container healthcare_postgres Healthy 
+ Container healthcare_celery_beat Starting 
+ Container healthcare_redis Healthy 
+ Container healthcare_api Starting 
+ Container healthcare_celery_worker Started 
+ Container healthcare_api Started 
+ Container healthcare_celery_beat Started 

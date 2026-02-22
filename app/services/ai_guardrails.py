@@ -1,5 +1,5 @@
 """
-AI Guardrails Service for patient chat safety filters.
+AI Guardrails Service for patient chat safety filters with criticality scoring.
 """
 
 import logging
@@ -30,7 +30,7 @@ class AIGuardrailsService:
         r"am i (dying|going to die)",
         r"prognosis",
         r"survival rate",
-        r"stage \d+ (cancer|tumor)"
+        r"stage \\d+ (cancer|tumor)"
     ]
     
     # Medical terminology that should be simplified for patients
@@ -52,7 +52,77 @@ class AIGuardrailsService:
     }
     
     def __init__(self):
-        logger.info("Initialized AI Guardrails Service")
+        logger.info("Initialized AI Guardrails Service with Criticality Scoring")
+    
+    def calculate_criticality_score(self, query: str) -> Tuple[int, List[str]]:
+        """
+        Calculate criticality score (0-10) for patient query.
+        
+        Scoring:
+        - 9-10: Emergency (severe symptoms requiring immediate care)
+        - 7-8: High-risk (urgent doctor consultation needed)
+        - 5-6: Diagnostic/treatment queries (doctor consultation recommended)
+        - 0-4: General health information (informational response appropriate)
+        
+        Args:
+            query: User query text
+            
+        Returns:
+            Tuple of (score, reasoning_flags)
+        """
+        score = 0
+        flags = []
+        query_lower = query.lower()
+        
+        # Emergency indicators (9-10)
+        emergency_severe = [
+            "severe chest pain", "can't breathe", "cannot breathe", "difficulty breathing",
+            "severe bleeding", "bleeding heavily", "unconscious", "stroke", "heart attack",
+            "suicide", "kill myself", "overdose", "poisoning", "anaphylaxis", "seizure",
+            "convulsion", "severe allergic reaction"
+        ]
+        if any(keyword in query_lower for keyword in emergency_severe):
+            score = max(score, 9)
+            flags.append("emergency_severe")
+        
+        # High-risk symptoms requiring urgent evaluation (7-8)
+        high_risk_symptoms = [
+            "sudden numbness", "chest pain", "spreading pain", "radiating pain",
+            "persistent severe pain", "persistent fever", "unexplained weight loss",
+            "blood in stool", "blood in urine", "severe headache", "vision loss",
+            "sudden weakness", "slurred speech", "facial drooping"
+        ]
+        if any(symptom in query_lower for symptom in high_risk_symptoms):
+            score = max(score, 7)
+            flags.append("high_risk_symptom")
+        
+        # Diagnostic queries (5-6) - seeking diagnosis
+        diagnostic_patterns = [
+            r"do i have (cancer|tumor|disease|diabetes|heart disease|stroke)",
+            r"is this (cancer|tumor|serious|life-threatening)",
+            r"am i (dying|going to die)",
+            r"what (disease|condition) do i have"
+        ]
+        if any(re.search(pattern, query_lower) for pattern in diagnostic_patterns):
+            score = max(score, 6)
+            flags.append("diagnostic_query")
+        
+        # Treatment/medication decision queries (5-6)
+        treatment_patterns = [
+            r"should i (start|stop|change|discontinue|take|quit)",
+            r"what (medication|drug|treatment|medicine) should i",
+            r"can i (stop|quit|start|change)",
+            r"(stop|start|change) (taking|using) (my )?(medication|drug|treatment|medicine)"
+        ]
+        if any(re.search(pattern, query_lower) for pattern in treatment_patterns):
+            score = max(score, 5)
+            flags.append("treatment_query")
+        
+        # General health questions remain at score 0-4 (default)
+        # Examples: "benefits of vitamin D", "how much water", "healthy diet"
+        # These will get informational responses
+        
+        return score, flags
     
     def check_emergency(self, query: str) -> bool:
         """
@@ -104,7 +174,7 @@ class AIGuardrailsService:
         ai_response: str
     ) -> Tuple[str, Dict[str, Any]]:
         """
-        Apply safety guardrails to patient AI response.
+        Apply safety guardrails to patient AI response using criticality scoring.
         
         Args:
             query: User query
@@ -113,16 +183,20 @@ class AIGuardrailsService:
         Returns:
             Tuple of (filtered_response, metadata)
         """
+        # Calculate criticality score
+        score, flags = self.calculate_criticality_score(query)
+        
         metadata = {
-            "is_emergency": False,
-            "is_complex": False,
+            "criticality_score": score,
+            "criticality_flags": flags,
+            "is_emergency": score >= 9,
+            "is_complex": 7 <= score < 9,
             "guardrails_applied": []
         }
         
-        # Check for emergency
-        if self.check_emergency(query):
-            metadata["is_emergency"] = True
-            metadata["guardrails_applied"].append("emergency_detected")
+        # Emergency response (Sc >= 9)
+        if score >= 9:
+            metadata["guardrails_applied"].append("emergency_response")
             
             emergency_response = """🚨 **URGENT: Seek Immediate Medical Attention**
 
@@ -143,34 +217,61 @@ I'm an AI assistant and cannot provide emergency medical care. Your safety is th
 """
             return emergency_response, metadata
         
-        # Check for complex/diagnostic queries
-        if self.check_complex_query(query):
-            metadata["is_complex"] = True
-            metadata["guardrails_applied"].append("complex_query_redirect")
+        # Doctor referral for high-risk symptoms (7 <= Sc < 9)
+        if 7 <= score < 9:
+            metadata["guardrails_applied"].append("doctor_referral")
             
-            redirect_response = f"""I understand you have important questions about your health. However, questions about diagnosis, treatment decisions, or serious medical conditions require professional medical evaluation.
+            referral_response = """I understand you're experiencing concerning symptoms. Based on what you've described, I recommend scheduling an appointment with your doctor soon for proper evaluation.
 
-**I recommend:**
-- 📞 **Schedule an appointment with your doctor** to discuss your concerns
-- 📋 **Bring your medical records** and test results to the appointment
-- ✍️ **Write down your questions** beforehand so you don't forget anything
+**Why you should see a doctor:**
+- Your symptoms may require professional medical assessment
+- A doctor can perform necessary examinations
+- They can order appropriate tests if needed
+- You'll receive personalized medical advice
 
-Your doctor can:
-- Review your complete medical history
-- Perform necessary examinations
-- Order appropriate tests
-- Provide personalized medical advice
+**What to do:**
+- 📞 **Call your doctor's office** to schedule an appointment
+- 📋 **Note your symptoms** including when they started and any changes
+- 📝 **List any questions** you want to ask your doctor
+
+**In the meantime:**
+- Monitor your symptoms
+- Seek immediate care if symptoms worsen significantly
+- Contact your doctor if you have urgent concerns
 
 **What I can help with:**
 - Explaining general health information
-- Helping you understand your test results (in simple terms)
-- Answering questions about your medical documents
-- Providing general wellness information
+- Helping you understand your medical records
+- Answering questions about your test results
 
-Would you like me to help you understand something specific from your medical records instead?
+Would you like me to help you understand something from your medical records?
 """
-            return redirect_response, metadata
+            return referral_response, metadata
         
+        # Cautious information for diagnostic/treatment queries (5 <= Sc < 7)
+        if 5 <= score < 7:
+            metadata["guardrails_applied"].append("cautious_information")
+            
+            # Simplify the AI response
+            simplified_response = self.simplify_medical_terms(ai_response)
+            
+            cautious_response = f"""{simplified_response}
+
+---
+
+**Important Medical Advice:**
+
+While I can provide general health information, questions about diagnosis or treatment decisions require professional medical evaluation. I strongly recommend:
+
+- 📞 **Consult with your doctor** to discuss your specific situation
+- 📋 **Bring your medical records** to your appointment
+- ✍️ **Prepare your questions** in advance
+
+Your doctor can review your complete medical history, perform examinations, and provide personalized medical advice tailored to your needs.
+"""
+            return cautious_response, metadata
+        
+        # General information response (Sc < 5)
         # Simplify medical terminology
         simplified_response = self.simplify_medical_terms(ai_response)
         
@@ -178,7 +279,7 @@ Would you like me to help you understand something specific from your medical re
             metadata["guardrails_applied"].append("terminology_simplified")
         
         # Add disclaimer if response contains medical information
-        if any(term in simplified_response.lower() for term in ["test", "result", "level", "value", "normal", "abnormal"]):
+        if any(term in simplified_response.lower() for term in ["test", "result", "level", "value", "normal", "abnormal", "health", "vitamin", "nutrient"]):
             metadata["guardrails_applied"].append("disclaimer_added")
             
             disclaimer = "\n\n---\n\n**Important:** This information is for educational purposes only. Always consult your healthcare provider for medical advice specific to your situation."
@@ -188,7 +289,7 @@ Would you like me to help you understand something specific from your medical re
     
     def build_patient_system_prompt(self, context: str) -> str:
         """
-        Build system prompt for patient AI with safety guidelines.
+        Build system prompt for patient AI with refined safety guidelines.
         
         Args:
             context: RAG context from patient's medical documents
@@ -198,31 +299,43 @@ Would you like me to help you understand something specific from your medical re
         """
         return f"""You are a compassionate healthcare AI assistant helping patients understand their medical information.
 
-**CRITICAL SAFETY GUIDELINES:**
-1. **Never provide diagnoses** - Always recommend consulting a healthcare professional
-2. **Simplify medical terminology** - Use plain language that patients can understand
-3. **Be supportive and empathetic** - Health concerns can be stressful
-4. **Acknowledge limitations** - Be honest when you don't have enough information
-5. **Encourage professional consultation** - For any serious or complex questions
-
-**Your Role:**
+**Your Primary Role:**
 - Help patients understand their medical documents and test results
-- Explain general health information in simple terms
-- Answer questions about their medical records
-- Provide emotional support and reassurance
-- Direct them to appropriate medical professionals when needed
+- Explain general health information in simple, accessible terms
+- Provide educational health information
+- Offer emotional support and reassurance
 
-**What NOT to do:**
-- Do NOT diagnose conditions
-- Do NOT recommend specific treatments or medications
-- Do NOT provide definitive medical advice
-- Do NOT use complex medical jargon without explanation
-- Do NOT make predictions about prognosis or outcomes
+**Response Guidelines by Query Type:**
+
+1. **General Health Questions** (vitamins, diet, exercise, lifestyle):
+   - Provide clear, evidence-based information
+   - Use simple language
+   - Include practical examples
+   - Be helpful and informative
+
+2. **Test Result Interpretation**:
+   - Explain what the values mean in simple terms
+   - Indicate if values are in normal range
+   - Avoid definitive diagnoses
+   - Suggest discussing with doctor for personalized advice
+
+3. **Symptom Questions**:
+   - Acknowledge their concern empathetically
+   - Provide general information about the symptom
+   - Recommend appropriate level of care (routine vs urgent)
+   - Never diagnose
+
+**CRITICAL SAFETY RULES:**
+- NEVER provide definitive diagnoses
+- NEVER recommend specific medications or treatments
+- NEVER make predictions about prognosis
+- ALWAYS recommend professional consultation for serious concerns
+- BE HONEST about limitations
 
 **Context from patient's medical records:**
 {context}
 
-Remember: You're here to inform and support, not to replace professional medical care.
+Remember: You're here to educate and support, not to replace medical professionals. For general health questions, provide helpful, informative responses.
 """
 
 

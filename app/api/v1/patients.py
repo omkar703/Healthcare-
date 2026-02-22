@@ -38,7 +38,7 @@ async def get_health_score(
             trend=health_score.trend,
             component_scores=health_score.component_scores,
             version=health_score.version,
-            calculated_at=health_score.created_at
+            calculated_at=health_score.calculated_at
         )
         
     except HTTPException:
@@ -70,7 +70,7 @@ async def get_risk_assessment(
             recommendations=risk_assessment.recommendations,
             urgency=risk_assessment.urgency,
             version=risk_assessment.version,
-            assessed_at=risk_assessment.created_at
+            assessed_at=risk_assessment.assessed_at
         )
         
     except HTTPException:

@@ -453,11 +453,11 @@ async def get_document_status(
         return DocumentStatusResponse(
             document_id=document.document_id,
             processing_status=document.processing_status.value,
-            tier_1_complete=document.tier_1_complete,
-            tier_2_complete=document.tier_2_complete,
-            tier_3_complete=document.tier_3_complete,
+            tier_1_complete=document.tier_1_completed_at is not None,
+            tier_2_complete=document.tier_2_completed_at is not None,
+            tier_3_complete=document.tier_3_completed_at is not None,
             error_message=document.error_message,
-            processed_at=document.processed_at
+            processed_at=document.tier_3_completed_at or document.updated_at
         )
     except Exception as e:
         logger.error(f"Error getting document status: {str(e)}")
